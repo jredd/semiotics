@@ -5,9 +5,10 @@ import { select } from 'd3-selection';
 import { timeYear } from 'd3-time';
 import { range } from 'd3-array';
 import * as d3 from 'd3';
-import {line} from 'd3-shape';
+import { line } from 'd3-shape';
 import {interpolate} from 'd3-interpolate';
 import { axisBottom, axisLeft } from "d3-axis";
+import { easeLinear } from "d3-ease";
 
 
 @Component({
@@ -19,7 +20,7 @@ export class AppComponent implements OnInit {
 
   width: number;
   height: number;
-  duration = 750;
+  duration = 5000;
   limit = 60 * 1;
   now: Date;
   groups: any;
@@ -29,50 +30,77 @@ export class AppComponent implements OnInit {
   axis: any;
   paths;
   svg: any;
-  margin: any = {top: 20, right: 10, bottom: 30, left: 30};
+  yMax = 200;
+  margin: any = {top: 20, right: 0, bottom: 30, left: 0};
   container: any;
   g: any;
   xAxis: any;
   yAxis: any;
+  lastValue = 10;
+  audio: any;
 
+  generateValue(self): number {
+    return Math.random() * self.lastValue + 20;
+  }
 
-  tick() {
-    this.now = new Date();
+  tick(self) {
+    self.now = new Date();
     // Add new values
-    for (const name of this.groups) {
-      const group = this.groups[name];
-      // group.data.push(group.value) // Real values arrive at irregular intervals
-      group.data.push(20 + Math.random() * 100);
-      group.path.attr('d', this.line);
+    for (const key in self.groups) {
+      if (self.groups.hasOwnProperty(key)) {
+        const group = self.groups[key];
+        // group.data.push(group.value) // Real values arrive at irregular intervals
+        // const newValue = Math.random() * this.yMax
+        let newValue = self.generateValue(self);
+
+        if (newValue > self.yMax) {
+          newValue = self.generateValue(self);
+        }
+
+
+        self.lastValue = newValue;
+        group.data.push(newValue);
+        group.path.attr('d', self.line);
+      }
     }
 
-    // Shift domain
-    this.x.domain([<any>this.now - (this.limit - 2) * this.duration, <any>this.now - this.duration]);
+    if (this.audio) {
+      // this.audio.pause();
+    }
 
-    // Slide x-axis left
-    this.g.select('.x.axis').transition()
-      .duration(this.duration)
-      // .ease('linear')
-      .call(this.xAxis);
+    this.audio = new Audio('./assets/Shepard-tone.mp3');
+    // this.audio.play();
+    // Shift domain
+    self.x.domain([<any>self.now - (self.limit - 2) * self.duration, <any>self.now - self.duration]);
+
+    // // Slide x-axis left
+    self.g.select('.x.axis').transition()
+      .duration(self.duration)
+      .ease(easeLinear)
+      .call(self.xAxis);
 
     // Slide paths left
-    this.g.select('paths').attr('transform', null)
+    self.paths.attr('transform', null)
       .transition()
-      .duration(this.duration)
-      // .ease('linear')
-      .attr('transform', 'translate(' + this.x(<any>this.now - (this.limit - 1) * this.duration) + ')')
-      .each('end', this.tick);
-    console.log('poop')
+      .duration(self.duration)
+      .ease(easeLinear)
+      .attr('transform', 'translate(' + self.x(<any>self.now - (self.limit - 1) * self.duration) + ')')
+      .on('end', function() { self.tick(self); })
+
+
     // Remove oldest data point from each group
-    for (const name of this.groups) {
-      const group = this.groups[name];
-      group.data.shift();
+    for (const key in self.groups) {
+      if (self.groups.hasOwnProperty(key)) {
+        const group = self.groups[key];
+        group.data.shift();
+      }
     }
   }
 
 
   setupGraph() {
-    this.container = select('#container');
+
+    this.container = select('#graph_container');
     const containerNode: any = this.container.node();
     const dimensions = containerNode.getBoundingClientRect();
 
@@ -84,44 +112,41 @@ export class AppComponent implements OnInit {
       .range([0, this.width]);
 
     this.y = scaleLinear()
-      .domain([0, 100])
+      .domain([0, this.yMax])
       .range([this.height, 0]);
 
-    this.xAxis = axisBottom(this.x);
+    this.xAxis = axisBottom(this.x)
+      .tickFormat(d3.timeFormat('%S'))
     this.yAxis = axisLeft(this.y);
 
   }
 
   ngOnInit() {
+    const self = this;
     this.now = new Date(Date.now() - this.duration);
-
     this.setupGraph();
 
     this.groups = {
-      current: {
-        value: 0,
-        color: 'orange',
-        data: range(this.limit).map(function() {
-            return 0;
-        })
-      },
-      target: {
-        value: 0,
-        color: 'green',
-        data: range(this.limit).map(function() { return 0; })
-      },
+      // current: {
+      //   value: 0,
+      //   color: 'orange',
+      //   data: range(self.limit).map(function() { return 0; })
+      // },
+      // target: {
+      //   value: 0,
+      //   color: 'green',
+      //   data: range(self.limit).map(function() { return 0; })
+      // },
       output: {
         value: 0,
         color: 'grey',
-        data: range(this.limit).map(function() { return 0; })
+        data: range(self.limit).map(function() { return 0; })
       }
     };
 
     this.line = d3.line()
-      .x(function(d, i) {
-          return this.x(<any>this.now - (this.limit - 1 - i) * this.duration);
-      })
-      .y(function(d) { return this.y(d); });
+      .x(function(d, i) { return self.x(<any>self.now - (self.limit - 1 - i) * self.duration); })
+      .y(function(d) { return self.y(d); });
 
     this.svg = this.container.append('svg')
       .attr('id', 'chart')
@@ -137,23 +162,27 @@ export class AppComponent implements OnInit {
       .attr('transform', 'translate(0,' + this.height + ')')
       .call(this.xAxis);
 
-    this.g.append('g')
-      .attr('class', 'y axis')
-      .call(this.yAxis);
+    // this.g.append('g')
+    //   .attr('class', 'y axis')
+    //   .call(this.yAxis);
 
-    this.paths = this.g.append('g')
-      .attr('class', 'paths');
+    this.paths = this.g.append('g');
+    this.paths.attr('class', 'paths');
 
     for (const key in this.groups) {
       if (this.groups.hasOwnProperty(key)) {
         const group = this.groups[key];
         group.path = this.paths.append('path')
           .data([group.data])
-          .attr('class', name + ' group')
-          .style('stroke', group.color);
+          .attr('class', key + ' pathGroup')
+          .style('stroke', group.color)
+          .style('shape-rendering', 'crispEdges')
+          .style('fill', 'none')
+          .style('stroke-wdith', 1)
+          .style('shape-rendering', 'auto');
       }
     }
 
-    this.tick();
+    this.tick(this);
   }
 }
