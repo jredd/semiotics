@@ -4,9 +4,10 @@ import { scaleLinear} from 'd3-scale';
 import { select } from 'd3-selection';
 import { timeYear } from 'd3-time';
 import { range } from 'd3-array';
-// import * as d3 from 'd3';
+import * as d3 from 'd3';
 import {line} from 'd3-shape';
 import {interpolate} from 'd3-interpolate';
+import { axisBottom, axisLeft } from "d3-axis";
 
 
 @Component({
@@ -16,10 +17,10 @@ import {interpolate} from 'd3-interpolate';
 })
 export class AppComponent implements OnInit {
 
-  width = 500;
-  height = 200;
+  width: number;
+  height: number;
   duration = 750;
-  limit = 60;
+  limit = 60 * 1;
   now: Date;
   groups: any;
   x: any;
@@ -28,6 +29,12 @@ export class AppComponent implements OnInit {
   axis: any;
   paths;
   svg: any;
+  margin: any = {top: 20, right: 10, bottom: 30, left: 30};
+  container: any;
+  g: any;
+  xAxis: any;
+  yAxis: any;
+
 
   tick() {
     this.now = new Date();
@@ -40,36 +47,55 @@ export class AppComponent implements OnInit {
     }
 
     // Shift domain
-    this.x.domain([<any>this.now - (this.limit - 2) * this.duration, <any>this.now - this.duration])
+    this.x.domain([<any>this.now - (this.limit - 2) * this.duration, <any>this.now - this.duration]);
 
     // Slide x-axis left
-    this.axis.transition()
-        .duration(this.duration)
-        .ease('linear')
-        .call(this.x.axis)
+    this.g.select('.x.axis').transition()
+      .duration(this.duration)
+      // .ease('linear')
+      .call(this.xAxis);
 
     // Slide paths left
-    this.paths.attr('transform', null)
-        .transition()
-        .duration(this.duration)
-        .ease('linear')
-        .attr('transform', 'translate(' + this.x(<any>this.now - (this.limit - 1) * this.duration) + ')')
-        .each('end', this.tick);
-
+    this.g.select('paths').attr('transform', null)
+      .transition()
+      .duration(this.duration)
+      // .ease('linear')
+      .attr('transform', 'translate(' + this.x(<any>this.now - (this.limit - 1) * this.duration) + ')')
+      .each('end', this.tick);
+    console.log('poop')
     // Remove oldest data point from each group
     for (const name of this.groups) {
-        const group = this.groups[name]
-        group.data.shift();
+      const group = this.groups[name];
+      group.data.shift();
     }
   }
 
 
-  ngOnInit() {
-    console.log('turtles');
+  setupGraph() {
+    this.container = select('#container');
+    const containerNode: any = this.container.node();
+    const dimensions = containerNode.getBoundingClientRect();
 
-    // let limit = 60 * 1;
-    // let duration = 750;
+    this.width = dimensions.width - this.margin.left - this.margin.right;
+    this.height = dimensions.height - this.margin.bottom - this.margin.top;
+
+    this.x = scaleLinear()
+      .domain([<any>this.now - (this.limit - 2), (<any>this.now - this.duration)])
+      .range([0, this.width]);
+
+    this.y = scaleLinear()
+      .domain([0, 100])
+      .range([this.height, 0]);
+
+    this.xAxis = axisBottom(this.x);
+    this.yAxis = axisLeft(this.y);
+
+  }
+
+  ngOnInit() {
     this.now = new Date(Date.now() - this.duration);
+
+    this.setupGraph();
 
     this.groups = {
       current: {
@@ -80,55 +106,52 @@ export class AppComponent implements OnInit {
         })
       },
       target: {
-          value: 0,
-          color: 'green',
-          data: range(this.limit).map(function() {
-              return 0;
-          })
+        value: 0,
+        color: 'green',
+        data: range(this.limit).map(function() { return 0; })
       },
       output: {
-          value: 0,
-          color: 'grey',
-          data: range(this.limit).map(function() {
-              return 0;
-          })
+        value: 0,
+        color: 'grey',
+        data: range(this.limit).map(function() { return 0; })
       }
-    }
-
-    this.x = scaleLinear()
-        .domain([<any>this.now - (this.limit - 2), (<any>this.now - this.duration)])
-        .range([0, this.width])
-
-    this.y = scaleLinear()
-        .domain([0, 100])
-        .range([this.height, 0])
+    };
 
     this.line = d3.line()
-        .x(function(d, i) {
-            return this.x(<any>this.now - (this.limit - 1 - i) * this.duration);
-        })
-        .y(function(d) {
-            return this.y(d);
-        });
+      .x(function(d, i) {
+          return this.x(<any>this.now - (this.limit - 1 - i) * this.duration);
+      })
+      .y(function(d) { return this.y(d); });
 
-    this.svg = select('.graph').append('svg')
-        .attr('class', 'chart')
-        .attr('width', this.width)
-        .attr('height', this.height + 50)
+    this.svg = this.container.append('svg')
+      .attr('id', 'chart')
+      .attr('width', this.width + this.margin.left + this.margin.right)
+      .attr('height', this.height + this.margin.top + this.margin.bottom);
 
-    this.axis = this.svg.append('g')
-        .attr('class', 'x axis')
-        .attr('transform', 'translate(0,' + this.height + ')')
-        .call(this.x.axis = this.svg.axis().scale(this.x).orient('bottom'))
+    this.g = this.svg.append('g')
+      .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
 
-    this.paths = this.svg.append('g')
 
-    for (let group of this.groups) {
-      // let group = groups[name]
-      group.path = this.paths.append('path')
-        .data([group.data])
-        .attr('class', name + ' group')
-        .style('stroke', group.color);
+    this.g.append('g')
+      .attr('class', 'x axis')
+      .attr('transform', 'translate(0,' + this.height + ')')
+      .call(this.xAxis);
+
+    this.g.append('g')
+      .attr('class', 'y axis')
+      .call(this.yAxis);
+
+    this.paths = this.g.append('g')
+      .attr('class', 'paths');
+
+    for (const key in this.groups) {
+      if (this.groups.hasOwnProperty(key)) {
+        const group = this.groups[key];
+        group.path = this.paths.append('path')
+          .data([group.data])
+          .attr('class', name + ' group')
+          .style('stroke', group.color);
+      }
     }
 
     this.tick();
