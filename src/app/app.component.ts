@@ -20,7 +20,7 @@ export class AppComponent implements OnInit {
 
   width: number;
   height: number;
-  duration = 5000;
+  duration = 750;
   limit = 60 * 1;
   now: Date;
   groups: any;
@@ -178,7 +178,7 @@ export class AppComponent implements OnInit {
           .style('stroke', group.color)
           .style('shape-rendering', 'crispEdges')
           .style('fill', 'none')
-          .style('stroke-wdith', 1)
+          .style('stroke-width', 2)
           .style('shape-rendering', 'auto');
       }
     }
