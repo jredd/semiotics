@@ -20,7 +20,7 @@ export class AppComponent implements OnInit {
 
   width: number;
   height: number;
-  duration = 750;
+  duration = 1485;
   limit = 60 * 1;
   now: Date;
   groups: any;
@@ -38,9 +38,40 @@ export class AppComponent implements OnInit {
   yAxis: any;
   lastValue = 10;
   audio: any;
+  greater: boolean;
 
   generateValue(self): number {
     return Math.random() * self.lastValue + 20;
+  }
+
+  playAudio(audio: any) {
+    audio.play()
+  }
+
+  setAudio() {
+    // if (this.greater) {
+    //   this.audio = new Audio('./assets/shepard_ton2.mp3');
+    // } else {
+    //   this.audio = new Audio('./assets/shepard_ton2_desc.mp3');
+    // }
+    //
+    // this.audio.play()
+
+    const self = this;
+    let audio;
+
+    if (this.greater) {
+      audio = new Audio('./assets/shepard_ton2.mp3');
+    } else {
+      audio = new Audio('./assets/shepard_ton2_desc.mp3');
+    }
+
+
+    setTimeout(function() {
+      console.log(self.audio)
+      self.playAudio(audio)
+      // self.audio.play();
+    }, self.duration)
   }
 
   tick(self) {
@@ -56,7 +87,12 @@ export class AppComponent implements OnInit {
         if (newValue > self.yMax) {
           newValue = self.generateValue(self);
         }
-
+        // console.log(newValue, self.lastValue);
+        if (newValue > self.lastValue) {
+          self.greater = true;
+        } else {
+          self.greater = false;
+        }
 
         self.lastValue = newValue;
         group.data.push(newValue);
@@ -64,12 +100,10 @@ export class AppComponent implements OnInit {
       }
     }
 
-    if (this.audio) {
-      // this.audio.pause();
-    }
-
-    this.audio = new Audio('./assets/Shepard-tone.mp3');
-    // this.audio.play();
+    // if (this.audio) {
+    //   // this.audio.pause();
+    // }
+    //
     // Shift domain
     self.x.domain([<any>self.now - (self.limit - 2) * self.duration, <any>self.now - self.duration]);
 
@@ -78,14 +112,20 @@ export class AppComponent implements OnInit {
       .duration(self.duration)
       .ease(easeLinear)
       .call(self.xAxis);
-
+    // self.playAudio();
     // Slide paths left
     self.paths.attr('transform', null)
       .transition()
       .duration(self.duration)
       .ease(easeLinear)
       .attr('transform', 'translate(' + self.x(<any>self.now - (self.limit - 1) * self.duration) + ')')
-      .on('end', function() { self.tick(self); })
+      .on('end', function() {
+        self.setAudio();
+        self.tick(self);
+      })
+      .on('start', function() {
+        // self.playAudio();
+      })
 
 
     // Remove oldest data point from each group
