@@ -39,10 +39,13 @@ export class AppComponent implements OnInit {
   lastValue = 10;
   audio: any;
   greater: boolean;
+  rangeChange: number;
+
+  breakMid: 20;
+  breakHigh: 30;
 
   generateValue(self): number {
     // return Math.random() * self.lastValue + 20;
-
     const shift = Math.random() * 90;
 
     if (shift <= 20) {
@@ -52,8 +55,6 @@ export class AppComponent implements OnInit {
     } else if (shift > 20) {
       return Math.random() * self.lastValue + 40;
     }
-
-
   }
 
   playAudio(audio: any) {
@@ -65,9 +66,9 @@ export class AppComponent implements OnInit {
     let audio;
 
     if (this.greater) {
-      audio = new Audio('./assets/shepard_ton2.mp3');
+      audio = new Audio('./assets/shep_mid_asce.mp3');
     } else {
-      audio = new Audio('./assets/shepard_ton2_desc.mp3');
+      audio = new Audio('./assets/shep_mid_desc.mp3');
     }
 
 
@@ -90,14 +91,16 @@ export class AppComponent implements OnInit {
           newValue = self.generateValue(self);
         }
 
-
-
-        // console.log(newValue, self.lastValue);
         if (newValue > self.lastValue) {
           self.greater = true;
         } else {
           self.greater = false;
         }
+
+
+        let difference = self.lastValue - newValue;
+
+        if (difference)
 
         self.lastValue = newValue;
         group.data.push(newValue);
@@ -105,10 +108,6 @@ export class AppComponent implements OnInit {
       }
     }
 
-    // if (this.audio) {
-    //   // this.audio.pause();
-    // }
-    //
     // Shift domain
     self.x.domain([<any>self.now - (self.limit - 2) * self.duration, <any>self.now - self.duration]);
 
@@ -117,7 +116,7 @@ export class AppComponent implements OnInit {
       .duration(self.duration)
       .ease(easeLinear)
       .call(self.xAxis);
-    // self.playAudio();
+
     // Slide paths left
     self.paths.attr('transform', null)
       .transition()
@@ -127,11 +126,7 @@ export class AppComponent implements OnInit {
       .on('end', function() {
         self.setAudio();
         self.tick(self);
-      })
-      .on('start', function() {
-        // self.playAudio();
-      })
-
+      });
 
     // Remove oldest data point from each group
     for (const key in self.groups) {
