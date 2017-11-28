@@ -40,25 +40,27 @@ export class AppComponent implements OnInit {
   audio: any;
   greater: boolean;
   rangeChange: number;
+  muteAudio: boolean = false;
 
-  breakMid: 20;
-  breakHigh: 30;
+  difference: number;
 
   generateValue(self): number {
     // return Math.random() * self.lastValue + 20;
-    const shift = Math.random() * 90;
+    const shift = Math.random() * 100;
 
-    if (shift <= 20) {
+    if (shift <= 15) {
       return Math.random() * this.yMax;
     } else if (shift > 30) {
       return Math.random() * self.lastValue + 20;
-    } else if (shift > 20) {
+    } else if (shift > 15) {
       return Math.random() * self.lastValue + 40;
     }
   }
 
   playAudio(audio: any) {
-    audio.play();
+    if (!this.muteAudio) {
+      audio.play().autoplay;
+    }
   }
 
   setAudio() {
@@ -66,11 +68,33 @@ export class AppComponent implements OnInit {
     let audio;
 
     if (this.greater) {
-      audio = new Audio('./assets/shep_mid_asce.mp3');
+      // audio = new Audio('./assets/shep_mid_asce.mp3');
+      // console.log(this.difference);
+      if (this.difference > 80 || this.difference < -80) {
+        // console.log('mid');
+        audio = new Audio('./assets/shep_mid_asce.mp3');
+      } else if (this.difference > 45 || this.difference < -45) {
+        // console.log('high');
+        audio = new Audio('./assets/shep_high_asce.mp3');
+      } else {
+        // console.log('low');
+        audio = new Audio('./assets/shep_low_asce.mp3');
+      }
     } else {
-      audio = new Audio('./assets/shep_mid_desc.mp3');
+      console.log(this.difference);
+      // audio = new Audio('./assets/shep_mid_desc.mp3');
+      if (this.difference > 80 || this.difference < -80) {
+        // console.log('mid');
+        audio = new Audio('./assets/shep_mid_desc.mp3');
+      } else if (this.difference > 45 || this.difference < -45) {
+        // console.log('high');
+        audio = new Audio('./assets/shep_high_desc.mp3');
+      } else {
+        // console.log('low');
+        audio = new Audio('./assets/shep_low_desc.mp3');
+      }
     }
-
+    // console.log('----------')
 
     setTimeout(function() {
       self.playAudio(audio);
@@ -97,10 +121,7 @@ export class AppComponent implements OnInit {
           self.greater = false;
         }
 
-
-        let difference = self.lastValue - newValue;
-
-        if (difference)
+        self.difference = self.lastValue - newValue;
 
         self.lastValue = newValue;
         group.data.push(newValue);

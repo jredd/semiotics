@@ -1,4 +1,6 @@
 <div id="container" class="row">
+  <button *ngIf="muteAudio" (click)="muteAudio ? muteAudio = false : muteAudio = true;">Enable Audio</button>
+  <button *ngIf="!muteAudio" (click)="muteAudio ? muteAudio = false : muteAudio = true;">Mute Audio</button>
   <div id="graph_container"></div>
 </div>
 

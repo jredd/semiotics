@@ -5,7 +5,7 @@
   padding-left: 15px;
   padding-right: 15px; }
   #container #graph_container {
-    height: 100%;
+    height: calc(100% - 18px);
     width: inherit; }
 
 /*# sourceMappingURL=app.component.css.map */
