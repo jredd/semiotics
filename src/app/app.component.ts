@@ -17,7 +17,7 @@ import { easeLinear } from "d3-ease";
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
-
+open
   width: number;
   height: number;
   duration = 1485;
